@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { MusicNode as MusicNodeType } from "../../domain/musicGraph.types";
 import { calculateNodeRadius } from "../../domain/graphValidation";
 import { NODE_TYPE_THEMES } from "../../domain/graphSelectors";
+import { getRadialGlowTexture } from "./glowTexture";
 import { NodeLabel } from "./NodeLabel";
 
 interface MusicNodeProps {
@@ -28,35 +29,29 @@ export const MusicNode: React.FC<MusicNodeProps> = ({
   onSelect,
   onHover,
 }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
-  const glowRingRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const spriteRef = useRef<THREE.Sprite>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
 
   const radius = useMemo(() => calculateNodeRadius(node), [node]);
-  const theme = NODE_TYPE_THEMES[node.type];
-  const color = useMemo(() => new THREE.Color(theme.primary), [theme.primary]);
+  const glowTexture = useMemo(() => getRadialGlowTexture(), []);
 
-  // Subtle breathing / pulse effect in 3D without triggering React renders
+  // Use custom node color if assigned, otherwise fallback to theme
+  const nodeColorHex = node.color || NODE_TYPE_THEMES[node.type].primary;
+  const color = useMemo(() => new THREE.Color(nodeColorHex), [nodeColorHex]);
+
+  // Halo sprite scale: ~4x the inner core for that soft cosmic nebula aura
+  const spriteScale = useMemo(() => radius * 4.6, [radius]);
+
+  // Gentle organic breathing animation without React state re-renders
   useFrame((state, delta) => {
-    if (ringRef.current) {
-      ringRef.current.rotation.z += delta * (node.type === "genre" ? 0.35 : 0.6);
-      ringRef.current.rotation.x += delta * 0.15;
-    }
+    if (!groupRef.current) return;
 
-    if (glowRingRef.current && isSelected) {
-      glowRingRef.current.rotation.z -= delta * 0.8;
-      const pulse = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.08;
-      glowRingRef.current.scale.set(pulse, pulse, pulse);
-    }
-
-    if (meshRef.current && (isSelected || isHovered)) {
-      const targetScale = isSelected ? 1.25 : 1.15;
-      meshRef.current.scale.lerp(
-        new THREE.Vector3(targetScale, targetScale, targetScale),
-        delta * 8
-      );
-    } else if (meshRef.current) {
-      meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 8);
+    if (isSelected || isHovered) {
+      const pulse = 1 + Math.sin(state.clock.elapsedTime * 4) * 0.06;
+      groupRef.current.scale.lerp(new THREE.Vector3(pulse * 1.15, pulse * 1.15, pulse * 1.15), delta * 8);
+    } else {
+      groupRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 6);
     }
   });
 
@@ -79,65 +74,61 @@ export const MusicNode: React.FC<MusicNodeProps> = ({
 
   if (!node.position) return null;
 
-  const targetOpacity = isDimmed ? 0.22 : 1.0;
-  const isPriority = isSelected || isNeighbor || isHovered;
+  const targetOpacity = isDimmed ? 0.18 : 1.0;
+  const haloOpacity = isDimmed ? 0.12 : isSelected ? 0.95 : isHovered ? 0.85 : 0.72;
 
   return (
-    <group position={node.position}>
-      {/* Central Node Sphere */}
+    <group ref={groupRef} position={node.position}>
+      {/* 1. Outer Soft Radial Glow Halo (Additive blending for nebula blending) */}
+      <sprite
+        ref={spriteRef}
+        scale={[spriteScale, spriteScale, 1]}
+      >
+        <spriteMaterial
+          map={glowTexture}
+          color={color}
+          transparent
+          opacity={haloOpacity}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </sprite>
+
+      {/* 2. Inner Luminous Core Sphere */}
       <mesh
-        ref={meshRef}
+        ref={coreRef}
         onClick={handleClick}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       >
-        <sphereGeometry args={[radius, 24, 24]} />
-        <meshStandardMaterial
-          color={color}
-          roughness={0.25}
-          metalness={0.4}
-          emissive={color}
-          emissiveIntensity={isSelected ? 0.9 : isPriority ? 0.55 : 0.3}
+        <sphereGeometry args={[radius * 0.52, 24, 24]} />
+        <meshBasicMaterial
+          color="#ffffff"
           transparent
-          opacity={targetOpacity}
+          opacity={targetOpacity * 0.95}
         />
       </mesh>
 
-      {/* Orbiting Halo Ring for Artists and Genres */}
-      {(node.type === "genre" || node.type === "artist" || isSelected) && (
-        <mesh ref={ringRef} rotation={[Math.PI / 3, 0, 0]}>
-          <ringGeometry args={[radius * 1.35, radius * 1.55, 32]} />
-          <meshBasicMaterial
-            color={color}
-            side={THREE.DoubleSide}
-            transparent
-            opacity={isDimmed ? 0.12 : isSelected ? 0.75 : 0.4}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
+      {/* 3. Mid-layer Color Core */}
+      <mesh>
+        <sphereGeometry args={[radius * 0.82, 24, 24]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={targetOpacity * 0.75}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
 
-      {/* Extra Pulsing Selected Ring */}
-      {isSelected && (
-        <mesh ref={glowRingRef} rotation={[0, Math.PI / 4, 0]}>
-          <ringGeometry args={[radius * 1.7, radius * 1.9, 32]} />
-          <meshBasicMaterial
-            color="#ffffff"
-            side={THREE.DoubleSide}
-            transparent
-            opacity={0.8}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
-
-      {/* Floating 3D HTML Label */}
+      {/* 4. Crisp floating typography label */}
       <NodeLabel
         node={node}
-        visible={showLabels || node.type === "genre"}
+        visible={showLabels}
         isSelected={isSelected}
         isNeighbor={isNeighbor}
         isHovered={isHovered}
+        radius={radius}
       />
     </group>
   );

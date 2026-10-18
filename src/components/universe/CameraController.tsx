@@ -9,7 +9,7 @@ interface CameraControllerProps {
   resetTrigger: number;
 }
 
-const DEFAULT_CAMERA_POS = new THREE.Vector3(0, 15, 52);
+const DEFAULT_CAMERA_POS = new THREE.Vector3(0, 10, 56);
 const DEFAULT_TARGET_POS = new THREE.Vector3(0, 0, 0);
 
 export const CameraController: React.FC<CameraControllerProps> = ({
@@ -24,6 +24,30 @@ export const CameraController: React.FC<CameraControllerProps> = ({
   const targetCamPos = useRef<THREE.Vector3>(DEFAULT_CAMERA_POS.clone());
   const isTransitioning = useRef<boolean>(false);
 
+  // Active keyboard keys state for WASD / QE fly navigation
+  const keysPressed = useRef<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      keysPressed.current[e.key.toLowerCase()] = true;
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keysPressed.current[e.key.toLowerCase()] = false;
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
   // When focusTarget changes (node clicked or searched)
   useEffect(() => {
     if (focusTarget) {
@@ -33,7 +57,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({
       // Offset camera position back from node to avoid clipping
       const currentDir = camera.position.clone().sub(new THREE.Vector3(tx, ty, tz)).normalize();
       if (currentDir.lengthSq() < 0.001) {
-        currentDir.set(0, 0.4, 1).normalize();
+        currentDir.set(0, 0.35, 1).normalize();
       }
 
       // Safe viewing distance of 14 units
@@ -53,19 +77,47 @@ export const CameraController: React.FC<CameraControllerProps> = ({
   }, [resetTrigger]);
 
   useFrame((_, delta) => {
-    if (!isTransitioning.current || !controlsRef.current) return;
+    if (!controlsRef.current) return;
 
-    // Smooth lerp damping
-    const t = Math.min(1, delta * 3.5);
-    camera.position.lerp(targetCamPos.current, t);
-    controlsRef.current.target.lerp(targetLookAt.current, t);
-    controlsRef.current.update();
+    // 1. Smooth lerping when transitioning to target or reset
+    if (isTransitioning.current) {
+      const t = Math.min(1, delta * 3.8);
+      camera.position.lerp(targetCamPos.current, t);
+      controlsRef.current.target.lerp(targetLookAt.current, t);
+      controlsRef.current.update();
 
-    const distPos = camera.position.distanceTo(targetCamPos.current);
-    const distTarget = controlsRef.current.target.distanceTo(targetLookAt.current);
+      const distPos = camera.position.distanceTo(targetCamPos.current);
+      const distTarget = controlsRef.current.target.distanceTo(targetLookAt.current);
 
-    if (distPos < 0.1 && distTarget < 0.1) {
-      isTransitioning.current = false;
+      if (distPos < 0.1 && distTarget < 0.1) {
+        isTransitioning.current = false;
+      }
+      return;
+    }
+
+    // 2. Keyboard fly navigation (W A S D to fly, Q E up/down)
+    const moveSpeed = 24 * delta;
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+
+    const right = new THREE.Vector3();
+    right.crossVectors(camera.up, forward).negate().normalize();
+
+    const moveDelta = new THREE.Vector3(0, 0, 0);
+
+    if (keysPressed.current["w"]) moveDelta.addScaledVector(forward, moveSpeed);
+    if (keysPressed.current["s"]) moveDelta.addScaledVector(forward, -moveSpeed);
+    if (keysPressed.current["d"]) moveDelta.addScaledVector(right, moveSpeed);
+    if (keysPressed.current["a"]) moveDelta.addScaledVector(right, -moveSpeed);
+    if (keysPressed.current["e"]) moveDelta.y += moveSpeed;
+    if (keysPressed.current["q"]) moveDelta.y -= moveSpeed;
+
+    if (moveDelta.lengthSq() > 0) {
+      camera.position.add(moveDelta);
+      controlsRef.current.target.add(moveDelta);
+      controlsRef.current.update();
     }
   });
 
@@ -74,12 +126,12 @@ export const CameraController: React.FC<CameraControllerProps> = ({
       ref={controlsRef}
       makeDefault
       enableDamping
-      dampingFactor={0.06}
-      minDistance={6}
-      maxDistance={120}
+      dampingFactor={0.065}
+      minDistance={5}
+      maxDistance={140}
       rotateSpeed={0.8}
       zoomSpeed={1.0}
-      panSpeed={0.8}
+      panSpeed={0.85}
     />
   );
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { Compass, XCircle, Tag, MousePointer } from "lucide-react";
+import { XCircle } from "lucide-react";
 
 interface UniverseControlsProps {
   hasSelection: boolean;
@@ -11,51 +11,33 @@ interface UniverseControlsProps {
 
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
   hasSelection,
-  showLabels,
   onClearSelection,
-  onResetCamera,
-  onToggleLabels,
 }) => {
   return (
-    <div className="universe-controls-overlay">
-      <div className="controls-button-group">
-        {hasSelection && (
-          <button
-            type="button"
-            className="ctrl-btn btn-clear"
-            onClick={onClearSelection}
-            title="Clear current selection (Esc)"
-          >
-            <XCircle size={15} />
-            <span>Clear Focus</span>
-          </button>
-        )}
-
+    <footer className="universe-bottom-guide" aria-label="Navigation controls guide">
+      {hasSelection && (
         <button
           type="button"
-          className="ctrl-btn"
-          onClick={onResetCamera}
-          title="Reset camera to galaxy overview"
+          className="bottom-clear-focus-btn"
+          onClick={onClearSelection}
+          title="Clear active node selection (Esc)"
         >
-          <Compass size={15} />
-          <span>Reset View</span>
+          <XCircle size={13} />
+          <span>Clear Focus</span>
         </button>
+      )}
 
-        <button
-          type="button"
-          className={`ctrl-btn ${showLabels ? "active" : ""}`}
-          onClick={onToggleLabels}
-          title="Toggle 3D world labels"
-        >
-          <Tag size={15} />
-          <span>{showLabels ? "Hide Labels" : "Show Labels"}</span>
-        </button>
+      <div className="bottom-key-nav-hint">
+        <span><strong>Drag</strong> to orbit</span>
+        <span className="dot-sep">·</span>
+        <span><strong>Scroll</strong> to zoom</span>
+        <span className="dot-sep">·</span>
+        <span><strong>W A S D</strong> to fly</span>
+        <span className="dot-sep">·</span>
+        <span><strong>Q E</strong> up/down</span>
+        <span className="dot-sep">·</span>
+        <span><strong>Click</strong> a node</span>
       </div>
-
-      <div className="controls-hint">
-        <MousePointer size={12} className="hint-icon" />
-        <span>Drag to orbit • Right-drag to pan • Scroll to zoom</span>
-      </div>
-    </div>
+    </footer>
   );
 };

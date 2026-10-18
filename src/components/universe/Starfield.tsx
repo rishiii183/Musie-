@@ -77,10 +77,10 @@ export const Starfield: React.FC<StarfieldProps> = () => {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={1.2}
+        size={0.8}
         vertexColors
         transparent
-        opacity={0.85}
+        opacity={0.65}
         sizeAttenuation
         depthWrite={false}
       />

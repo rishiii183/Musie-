@@ -1,74 +1,64 @@
 import React from "react";
-import { Sparkles, Compass, Tag } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import type { GraphStats } from "../../domain/musicGraph.types";
 
 interface AppHeaderProps {
   stats: GraphStats;
   showLabels: boolean;
+  isSpotifyMode?: boolean;
   onToggleLabels: () => void;
   onResetCamera: () => void;
+  onOpenImport?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  stats,
   showLabels,
+  isSpotifyMode,
   onToggleLabels,
   onResetCamera,
+  onOpenImport,
 }) => {
   return (
     <header className="app-header">
       <div className="header-left">
-        <div className="brand-badge">
-          <Sparkles className="brand-icon" size={20} />
-          <div className="brand-text">
-            <h1 className="brand-title">MUSIE</h1>
-            <span className="brand-tagline">3D Sonic Galaxy</span>
-          </div>
-        </div>
-
-        <div className="provenance-pill" title="This universe is rendered from curated demo listening data">
-          <span className="provenance-dot" />
-          <span>Demo Data Mode</span>
-        </div>
-      </div>
-
-      <div className="header-center">
-        <div className="stats-ticker">
-          <span className="stat-item">
-            <strong className="stat-count text-purple">{stats.genreCount}</strong> Genres
-          </span>
-          <span className="stat-divider">•</span>
-          <span className="stat-item">
-            <strong className="stat-count text-cyan">{stats.artistCount}</strong> Artists
-          </span>
-          <span className="stat-divider">•</span>
-          <span className="stat-item">
-            <strong className="stat-count text-amber">{stats.trackCount}</strong> Tracks
+        <div className="brand-text">
+          <h1 className="brand-title">MUSIC UNIVERSE</h1>
+          <span className="brand-tagline">
+            {isSpotifyMode ? "Spotify Playlist Galaxy" : "your listening, mapped as a galaxy"}
           </span>
         </div>
       </div>
 
       <div className="header-right">
+        {onOpenImport && (
+          <button
+            type="button"
+            className="minimal-pill-btn import-pill-btn"
+            onClick={onOpenImport}
+            aria-label="Import Spotify playlist"
+            title="Import a Spotify playlist to generate a 3D galaxy"
+          >
+            <Sparkles size={12} className="sparkle-icon" />
+            <span>IMPORT PLAYLIST</span>
+          </button>
+        )}
+
         <button
           type="button"
-          className={`header-button ${showLabels ? "active" : ""}`}
+          className={`minimal-pill-btn ${showLabels ? "active" : ""}`}
           onClick={onToggleLabels}
-          title="Toggle 3D world labels"
-          aria-label="Toggle labels"
+          aria-label="Toggle node labels"
         >
-          <Tag size={15} />
-          <span>{showLabels ? "Labels ON" : "Labels OFF"}</span>
+          LABELS
         </button>
 
         <button
           type="button"
-          className="header-button"
+          className="minimal-pill-btn"
           onClick={onResetCamera}
-          title="Reset camera view to galaxy overview"
-          aria-label="Reset camera"
+          aria-label="Reset camera view"
         >
-          <Compass size={15} />
-          <span>Reset View</span>
+          RESET
         </button>
       </div>
     </header>

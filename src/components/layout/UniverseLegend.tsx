@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Info, ChevronDown, ChevronUp } from "lucide-react";
 
 export const UniverseLegend: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <aside className="universe-legend-card" aria-label="Universe Legend">

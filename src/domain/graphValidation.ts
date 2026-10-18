@@ -89,6 +89,7 @@ export function validateMusicGraph(graph: Partial<MusicGraph> | null | undefined
       externalUrl: typeof node.externalUrl === "string" ? node.externalUrl : undefined,
       metadata: node.metadata && typeof node.metadata === "object" ? { ...node.metadata } : undefined,
       position,
+      color: typeof node.color === "string" ? node.color : undefined,
       dataOrigin,
     };
 

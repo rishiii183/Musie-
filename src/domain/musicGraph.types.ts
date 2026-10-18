@@ -11,6 +11,7 @@ export interface MusicNode {
   externalUrl?: string;
   metadata?: Record<string, string | number | boolean | null>;
   position?: [number, number, number];
+  color?: string;
   dataOrigin: DataOrigin;
 }
 

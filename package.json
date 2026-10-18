@@ -8,7 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server:dev": "npm --prefix server run dev",
+    "server:build": "npm --prefix server run build",
+    "server:test": "npm --prefix server test",
+    "server:start": "npm --prefix server start",
+    "test:all": "vitest run && npm --prefix server test"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

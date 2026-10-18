@@ -1,7 +1,6 @@
 import React from "react";
 import { Html } from "@react-three/drei";
 import type { MusicNode } from "../../domain/musicGraph.types";
-import { NODE_TYPE_THEMES } from "../../domain/graphSelectors";
 
 interface NodeLabelProps {
   node: MusicNode;
@@ -9,6 +8,7 @@ interface NodeLabelProps {
   isSelected: boolean;
   isNeighbor: boolean;
   isHovered: boolean;
+  radius: number;
 }
 
 export const NodeLabel: React.FC<NodeLabelProps> = ({
@@ -18,73 +18,46 @@ export const NodeLabel: React.FC<NodeLabelProps> = ({
   isNeighbor,
   isHovered,
 }) => {
+  // Always show if label visibility is enabled, or if hovered/selected/neighbor
   if (!visible && !isSelected && !isNeighbor && !isHovered) {
     return null;
   }
 
-  const theme = NODE_TYPE_THEMES[node.type];
   const isPriority = isSelected || isHovered;
+  const isMajor = node.type === "genre" || (node.listeningCount && node.listeningCount > 150);
+
+  const fontSize = isMajor ? (isPriority ? "16px" : "14px") : isPriority ? "13px" : "11px";
+  const fontWeight = isMajor ? 700 : isPriority ? 600 : 500;
+  const opacity = isSelected ? 1.0 : isHovered ? 1.0 : isNeighbor ? 0.95 : 0.88;
 
   return (
     <Html
       center
-      distanceFactor={45}
+      distanceFactor={48}
       style={{
         pointerEvents: "none",
         userSelect: "none",
-        transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-        transform: `translate3d(0, ${isPriority ? "-24px" : "-18px"}, 0)`,
+        transition: "opacity 0.2s ease, transform 0.2s ease",
         zIndex: isSelected ? 100 : isHovered ? 90 : 10,
+        opacity,
       }}
     >
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: isPriority ? "4px 10px" : "2px 8px",
-          background: isSelected
-            ? "rgba(15, 23, 42, 0.92)"
-            : "rgba(15, 23, 42, 0.78)",
-          border: `1px solid ${isSelected ? theme.primary : isNeighbor ? theme.border : "rgba(255, 255, 255, 0.15)"}`,
-          borderRadius: "9999px",
-          boxShadow: isSelected
-            ? `0 0 16px ${theme.glow}, 0 4px 12px rgba(0, 0, 0, 0.5)`
-            : "0 2px 8px rgba(0, 0, 0, 0.4)",
-          backdropFilter: "blur(6px)",
+          fontFamily: "'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif",
+          fontSize,
+          fontWeight,
+          color: "#ffffff",
+          textAlign: "center",
           whiteSpace: "nowrap",
+          textShadow:
+            "0 1px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.75)",
+          letterSpacing: isMajor ? "0.01em" : "0",
+          transform: isPriority ? "scale(1.08)" : "scale(1)",
+          lineHeight: 1.15,
         }}
       >
-        <span
-          style={{
-            width: "6px",
-            height: "6px",
-            borderRadius: "50%",
-            backgroundColor: theme.primary,
-            boxShadow: `0 0 6px ${theme.primary}`,
-          }}
-        />
-        <span
-          style={{
-            fontSize: isPriority ? "12px" : "11px",
-            fontWeight: isPriority ? 600 : 500,
-            color: "#f8fafc",
-            letterSpacing: "0.01em",
-          }}
-        >
-          {node.label}
-        </span>
-        {isPriority && node.listeningCount !== undefined && (
-          <span
-            style={{
-              fontSize: "10px",
-              color: "#94a3b8",
-              marginLeft: "2px",
-            }}
-          >
-            {node.listeningCount} plays
-          </span>
-        )}
+        {node.label}
       </div>
     </Html>
   );

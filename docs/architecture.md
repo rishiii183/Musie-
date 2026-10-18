@@ -20,10 +20,10 @@
 **Why:** A visual graph must not imply inferred relationships are observed facts.  
 **Trade-off:** UI styling or labels should disclose derived/demo relationships when relevant.
 
-## 5. Frontend-only Phase 1
-**Decision:** No backend/database until a requirement needs one.  
-**Why:** A sample-data experience can deploy as a static frontend.  
-**Trade-off:** OAuth and token handling require a separate architecture review.
+## 5. Dedicated Node.js Backend for Spotify Integration
+**Decision:** Implement a lightweight, dedicated Node.js + Express + TypeScript service in `server/`.  
+**Why:** Spotify Web API Client Credentials tokens, client secrets, rate limiting, and playlist parsing must remain strictly server-side to prevent credential leakage and SSRF.  
+**Trade-off:** The frontend Vite dev server proxies `/api` to the backend on `http://localhost:3001`. In-memory caching is used without requiring an external database.
 
 ## 6. Persistent details panel
 **Decision:** Selection updates a side panel rather than a blocking modal.  
